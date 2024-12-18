@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"playlist-chat/spotify"
@@ -25,7 +26,14 @@ func (s *SpotifyHandler) SearchSpotify(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Write([]byte(searchResults))
+
+	json, err := json.Marshal(searchResults)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(json)
 }
 
 func (s *SpotifyHandler) SearchPlaylists(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +47,15 @@ func (s *SpotifyHandler) SearchPlaylists(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Write([]byte(searchResults))
+
+	json, err := json.Marshal(searchResults)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(json)
 }
 
 func (s *SpotifyHandler) SearchTracks(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +69,13 @@ func (s *SpotifyHandler) SearchTracks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Write([]byte(searchResults))
+
+	json, err := json.Marshal(searchResults)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(json)
 }
 
 func (s *SpotifyHandler) SearchAlbums(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +89,13 @@ func (s *SpotifyHandler) SearchAlbums(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Write([]byte(searchResults))
+
+	json, err := json.Marshal(searchResults)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(json)
 }
 
 func (s *SpotifyHandler) SearchArtists(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +109,28 @@ func (s *SpotifyHandler) SearchArtists(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Write([]byte(searchResults))
+
+	json, err := json.Marshal(searchResults)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(json)
+}
+
+func (s *SpotifyHandler) Test(w http.ResponseWriter, r *http.Request) {
+	searchResults, err := s.Client.Test()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json, err := json.Marshal(searchResults)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(json)
 }
 
 func extractQuery(r *http.Request) (string, error) {

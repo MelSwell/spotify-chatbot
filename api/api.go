@@ -22,11 +22,12 @@ func (a *apiConfig) InitSpotifyClient(spotifyClientID, spotifyClientSecret strin
 	if err != nil {
 		return err
 	}
-	tok, err := spotifyClient.GetClientToken()
+
+	err = spotify.FetchClientToken(spotifyClient)
 	if err != nil {
 		return err
 	}
-	spotifyClient.ClientAccessToken = tok
+
 	a.SpotifyClient = spotifyClient
 	return nil
 }

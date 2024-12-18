@@ -1,8 +1,6 @@
 package spotify
 
 import (
-	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,11 +8,20 @@ import (
 	"net/url"
 )
 
+const (
+	BaseURL            = "https://api.spotify.com/v1"
+	SearchTypeAlbum    = "album"
+	SearchTypeArtist   = "artist"
+	SearchTypePlaylist = "playlist"
+	SearchTypeTrack    = "track"
+	SearchTypeAll      = "album,artist,playlist,track"
+)
+
 type SpotifyClient struct {
-	ClientAccessToken string
-	ClientID          string
-	ClientSecret      string
-	Credentials       string
+	ClientToken  *SpotifyToken
+	ClientID     string
+	ClientSecret string
+	Credentials  string
 }
 
 func NewSpotifyClient(clientID, clientSecret string) (*SpotifyClient, error) {
@@ -25,76 +32,94 @@ func NewSpotifyClient(clientID, clientSecret string) (*SpotifyClient, error) {
 	}, nil
 }
 
-func (s *SpotifyClient) GetClientToken() (token string, err error) {
-	authURL := "https://accounts.spotify.com/api/token"
-	data := []byte("grant_type=client_credentials")
-	req, err := http.NewRequest("POST", authURL, bytes.NewBuffer(data))
-	if err != nil {
-		return "", err
+func (s *SpotifyClient) Search(query string, typeParam string) (result CombinedResponse, err error) {
+	q := url.QueryEscape(query)
+	var url string
+	if typeParam == "" {
+		url = fmt.Sprintf("%s/search?type=%s&q=%s", BaseURL, SearchTypeAll, q)
+	} else {
+		url = fmt.Sprintf("%s/search?type=%s&q=%s", BaseURL, typeParam, q)
 	}
-	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(s.Credentials)))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", "Bearer "+s.ClientToken.AccessToken)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", err
+		return CombinedResponse{}, err
 	}
 	defer resp.Body.Close()
 
+	// use this until we figure out how to handle spotify errors
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to get spotify client access token, status: %s", resp.Status)
+		body, _ := io.ReadAll(resp.Body)
+		return CombinedResponse{}, fmt.Errorf("search failed, status: %s, body: %s", resp.Status, body)
 	}
 
-	var body struct {
-		AccessToken string `json:"access_token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return "", err
+	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return CombinedResponse{}, err
 	}
 
-	return body.AccessToken, nil
+	return result, nil
 }
 
-func (s *SpotifyClient) Search(query string, typeParam string) ([]byte, error) {
-	encodedQ := url.QueryEscape(query)
-	var url string
-	if typeParam == "" {
-		url = "https://api.spotify.com/v1/search?type=album,artist,playlist,track&q=" + encodedQ
-	} else {
-		url = "https://api.spotify.com/v1/search?type=" + typeParam + "&q=" + encodedQ
-	}
-	req, _ := http.NewRequest("GET", url, nil)
-	req.Header.Set("Authorization", "Bearer "+s.ClientAccessToken)
+func (s *SpotifyClient) Test() (result CombinedResponse, err error) {
+	req, _ := http.NewRequest("GET", "https://api.spotify.com/v1/albums/0Kmn5zoggtkDhoGrNpHOeZ", nil)
+	req.Header.Set("Authorization", "Bearer "+s.ClientToken.AccessToken)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return CombinedResponse{}, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return CombinedResponse{}, err
 	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return CombinedResponse{}, err
+	}
+
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("search failed, status: %s, body: %s", resp.Status, body)
+		return CombinedResponse{}, fmt.Errorf("search failed, status: %s, body: %s", resp.Status, body)
 	}
 
-	return body, nil
+	return result, nil
 }
 
-func (s *SpotifyClient) SearchPlaylists(query string) ([]byte, error) {
-	return s.Search(query, "playlist")
+func (s *SpotifyClient) SearchPlaylists(query string) (SearchResponse[ResponseItemPlaylist], error) {
+	result, err := s.Search(query, SearchTypePlaylist)
+	if err != nil {
+		return SearchResponse[ResponseItemPlaylist]{}, err
+	}
+
+	return result.Playlists, nil
 }
 
-func (s *SpotifyClient) SearchTracks(query string) ([]byte, error) {
-	return s.Search(query, "track")
+func (s *SpotifyClient) SearchTracks(query string) (SearchResponse[ResponseItemTrack], error) {
+	result, err := s.Search(query, SearchTypeTrack)
+	if err != nil {
+		return SearchResponse[ResponseItemTrack]{}, err
+	}
+
+	return result.Tracks, nil
 }
 
-func (s *SpotifyClient) SearchArtists(query string) ([]byte, error) {
-	return s.Search(query, "artist")
+func (s *SpotifyClient) SearchArtists(query string) (SearchResponse[ResponseItemArtist], error) {
+	result, err := s.Search(query, SearchTypeArtist)
+	if err != nil {
+		return SearchResponse[ResponseItemArtist]{}, err
+	}
+
+	return result.Artists, nil
 }
 
-func (s *SpotifyClient) SearchAlbums(query string) ([]byte, error) {
-	return s.Search(query, "album")
+func (s *SpotifyClient) SearchAlbums(query string) (SearchResponse[ResponseItemAlbum], error) {
+	result, err := s.Search(query, SearchTypeAlbum)
+	if err != nil {
+		return SearchResponse[ResponseItemAlbum]{}, err
+	}
+
+	return result.Albums, nil
 }

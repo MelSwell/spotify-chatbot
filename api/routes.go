@@ -18,4 +18,6 @@ func (a *apiConfig) registerSpotifyRoutes(subrouter *mux.Router) {
 	r.HandleFunc("/search/albums", h.SearchAlbums).Methods("GET")
 	r.HandleFunc("/search/artists", h.SearchArtists).Methods("GET")
 
+	r.HandleFunc("/test", h.Test).Methods("GET")
+
 }
