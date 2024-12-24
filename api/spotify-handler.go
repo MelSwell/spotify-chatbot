@@ -21,7 +21,8 @@ func (s *SpotifyHandler) SearchSpotify(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	searchResults, err := s.Client.Search(q, "")
+
+	searchResults, err := s.Client.Search(q, spotify.SearchTypeAll)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -53,8 +54,6 @@ func (s *SpotifyHandler) SearchPlaylists(w http.ResponseWriter, r *http.Request)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(json)
 }
 
@@ -119,17 +118,18 @@ func (s *SpotifyHandler) SearchArtists(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *SpotifyHandler) Test(w http.ResponseWriter, r *http.Request) {
-	searchResults, err := s.Client.Test()
+	result, err := s.Client.Test()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	json, err := json.Marshal(searchResults)
+	json, err := json.Marshal(result)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	w.Write(json)
 }
 

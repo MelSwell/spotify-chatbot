@@ -3,7 +3,7 @@ package api
 import "github.com/gorilla/mux"
 
 func (a *apiConfig) RegisterRoutes() {
-	r := a.Router.PathPrefix("/api/v1").Subrouter()
+	r := a.Router.PathPrefix(a.BasePath).Subrouter()
 
 	a.registerSpotifyRoutes(r)
 }
@@ -19,5 +19,4 @@ func (a *apiConfig) registerSpotifyRoutes(subrouter *mux.Router) {
 	r.HandleFunc("/search/artists", h.SearchArtists).Methods("GET")
 
 	r.HandleFunc("/test", h.Test).Methods("GET")
-
 }

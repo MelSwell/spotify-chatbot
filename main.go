@@ -29,5 +29,10 @@ func main() {
 	api.RegisterRoutes()
 
 	log.Println("Server started on: http://localhost:8080")
+	log.Println("\nAvailable routes:")
+	if err = api.PrintRoutes(); err != nil {
+		log.Println(err)
+	}
+	log.Println("Listening...")
 	log.Fatal(http.ListenAndServe(":8080", api.Router))
 }

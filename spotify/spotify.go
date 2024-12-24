@@ -34,12 +34,7 @@ func NewSpotifyClient(clientID, clientSecret string) (*SpotifyClient, error) {
 
 func (s *SpotifyClient) Search(query string, typeParam string) (result CombinedResponse, err error) {
 	q := url.QueryEscape(query)
-	var url string
-	if typeParam == "" {
-		url = fmt.Sprintf("%s/search?type=%s&q=%s", BaseURL, SearchTypeAll, q)
-	} else {
-		url = fmt.Sprintf("%s/search?type=%s&q=%s", BaseURL, typeParam, q)
-	}
+	url := fmt.Sprintf("%s/search?type=%s&q=%s", BaseURL, typeParam, q)
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Set("Authorization", "Bearer "+s.ClientToken.AccessToken)
 
@@ -62,63 +57,64 @@ func (s *SpotifyClient) Search(query string, typeParam string) (result CombinedR
 	return result, nil
 }
 
-func (s *SpotifyClient) Test() (result CombinedResponse, err error) {
-	req, _ := http.NewRequest("GET", "https://api.spotify.com/v1/albums/0Kmn5zoggtkDhoGrNpHOeZ", nil)
+func (s *SpotifyClient) Test() (Playlist, error) {
+	req, _ := http.NewRequest("GET", "https://api.spotify.com/v1/playlists/03irz9t12mNseVaUUzb1UA", nil)
 	req.Header.Set("Authorization", "Bearer "+s.ClientToken.AccessToken)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return CombinedResponse{}, err
+		return Playlist{}, err
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return CombinedResponse{}, err
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return CombinedResponse{}, err
-	}
+	// body, err := io.ReadAll(resp.Body)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	if resp.StatusCode != http.StatusOK {
-		return CombinedResponse{}, fmt.Errorf("search failed, status: %s, body: %s", resp.Status, body)
+		body, _ := io.ReadAll(resp.Body)
+		return Playlist{}, fmt.Errorf("search failed, status: %s, body: %s", resp.Status, body)
 	}
 
-	return result, nil
+	var body Playlist
+	if err = json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return Playlist{}, err
+	}
+	return body, nil
 }
 
-func (s *SpotifyClient) SearchPlaylists(query string) (SearchResponse[ResponseItemPlaylist], error) {
+func (s *SpotifyClient) SearchPlaylists(query string) (SearchResponse[SearchItemPlaylist], error) {
 	result, err := s.Search(query, SearchTypePlaylist)
 	if err != nil {
-		return SearchResponse[ResponseItemPlaylist]{}, err
+		return SearchResponse[SearchItemPlaylist]{}, err
 	}
 
 	return result.Playlists, nil
 }
 
-func (s *SpotifyClient) SearchTracks(query string) (SearchResponse[ResponseItemTrack], error) {
+func (s *SpotifyClient) SearchTracks(query string) (SearchResponse[SearchItemTrack], error) {
 	result, err := s.Search(query, SearchTypeTrack)
 	if err != nil {
-		return SearchResponse[ResponseItemTrack]{}, err
+		return SearchResponse[SearchItemTrack]{}, err
 	}
 
 	return result.Tracks, nil
 }
 
-func (s *SpotifyClient) SearchArtists(query string) (SearchResponse[ResponseItemArtist], error) {
+func (s *SpotifyClient) SearchArtists(query string) (SearchResponse[SearchItemArtist], error) {
 	result, err := s.Search(query, SearchTypeArtist)
 	if err != nil {
-		return SearchResponse[ResponseItemArtist]{}, err
+		return SearchResponse[SearchItemArtist]{}, err
 	}
 
 	return result.Artists, nil
 }
 
-func (s *SpotifyClient) SearchAlbums(query string) (SearchResponse[ResponseItemAlbum], error) {
+func (s *SpotifyClient) SearchAlbums(query string) (SearchResponse[SearchItemAlbum], error) {
 	result, err := s.Search(query, SearchTypeAlbum)
 	if err != nil {
-		return SearchResponse[ResponseItemAlbum]{}, err
+		return SearchResponse[SearchItemAlbum]{}, err
 	}
 
 	return result.Albums, nil

@@ -23,7 +23,8 @@ func FetchClientToken(s *SpotifyClient) (err error) {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(s.Credentials)))
+	creds := base64.StdEncoding.EncodeToString([]byte(s.Credentials))
+	req.Header.Set("Authorization", "Basic "+creds)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := http.DefaultClient.Do(req)

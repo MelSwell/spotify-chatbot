@@ -1,27 +1,31 @@
 package spotify
 
-type ResponseItemType interface {
-	ResponseItemAlbum | ResponseItemArtist | ResponseItemPlaylist | ResponseItemTrack
+type SearchResponseItemType interface {
+	SearchItemAlbum | SearchItemArtist | SearchItemPlaylist | SearchItemTrack
 }
 
-type SearchResponse[T ResponseItemType] struct {
+type BaseResponse struct {
 	Href     string `json:"href"`
 	Limit    int    `json:"limit"`
 	Next     string `json:"next"`
 	Offset   int    `json:"offset"`
 	Previous string `json:"previous"`
 	Total    int    `json:"total"`
-	Items    []T    `json:"items"`
+}
+
+type SearchResponse[T SearchResponseItemType] struct {
+	BaseResponse
+	Items []T `json:"items"`
 }
 
 type CombinedResponse struct {
-	Tracks    SearchResponse[ResponseItemTrack]    `json:"tracks"`
-	Artists   SearchResponse[ResponseItemArtist]   `json:"artists"`
-	Albums    SearchResponse[ResponseItemAlbum]    `json:"albums"`
-	Playlists SearchResponse[ResponseItemPlaylist] `json:"playlists"`
+	Tracks    SearchResponse[SearchItemTrack]    `json:"tracks"`
+	Artists   SearchResponse[SearchItemArtist]   `json:"artists"`
+	Albums    SearchResponse[SearchItemAlbum]    `json:"albums"`
+	Playlists SearchResponse[SearchItemPlaylist] `json:"playlists"`
 }
 
-type ResponseItemAlbum struct {
+type SearchItemAlbum struct {
 	Href        string   `json:"href"`
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
@@ -35,7 +39,7 @@ type ResponseItemAlbum struct {
 	} `json:"artists"`
 }
 
-type ResponseItemArtist struct {
+type SearchItemArtist struct {
 	Href   string   `json:"href"`
 	ID     string   `json:"id"`
 	Name   string   `json:"name"`
@@ -43,7 +47,7 @@ type ResponseItemArtist struct {
 	Type   string   `json:"type"`
 }
 
-type ResponseItemPlaylist struct {
+type SearchItemPlaylist struct {
 	Href   string   `json:"href"`
 	ID     string   `json:"id"`
 	Name   string   `json:"name"`
@@ -52,18 +56,34 @@ type ResponseItemPlaylist struct {
 	Owner  struct {
 		DisplayName string `json:"display_name"`
 	} `json:"owner"`
+	Tracks struct {
+		Href  string `json:"href"`
+		Total int    `json:"total"`
+	} `json:"tracks"`
 }
 
-type ResponseItemTrack struct {
-	Href    string `json:"href"`
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Type    string `json:"type"`
-	Artists []struct {
-		Href string `json:"href"`
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"artists"`
+type Playlist struct {
+	SearchItemPlaylist
+	Description string `json:"description"`
+	Tracks      struct {
+		BaseResponse
+		Items []struct {
+			AddedAt string `json:"added_at"`
+			Track   SearchItemTrack
+		} `json:"items"`
+	} `json:"tracks"`
+}
+
+type SearchItemTrack struct {
+	Href     string             `json:"href"`
+	ID       string             `json:"id"`
+	Name     string             `json:"name"`
+	Type     string             `json:"type"`
+	Album    SearchItemAlbum    `json:"album"`
+	DiscNo   int                `json:"disc_number"`
+	TrackNo  int                `json:"track_number"`
+	Duration int                `json:"duration_ms"`
+	Artists  []SearchItemArtist `json:"artists"`
 }
 
 type Images struct {
